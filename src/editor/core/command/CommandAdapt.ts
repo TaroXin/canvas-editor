@@ -157,7 +157,7 @@ import {
 import { IAreaBadge, IBadge } from '../../interface/Badge'
 import { IRichtextOption } from '../../interface/Command'
 import { WatermarkType } from '../../dataset/enum/Watermark'
-import { IGetPdfOption, IPrintOption } from '@/editor/interface/Print'
+import { IGetPdfOption, IPrintOption } from '../../interface/Print'
 
 export class CommandAdapt {
   private draw: Draw
