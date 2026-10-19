@@ -47,6 +47,21 @@ Usage:
 const base64StringList = await instance.command.getImage(option?: IGetImageOption)
 ```
 
+## getPdf
+
+Feature: Get the document as a PDF (each page rendered as an image, same as printing)
+
+Usage:
+
+```javascript
+const blob = await instance.command.getPdf(option?: IGetPdfOption)
+
+interface IGetPdfOption {
+  pixelRatio?: number // Image pixel ratio. default: printPixelRatio
+  quality?: number // JPEG quality (0-1). default: 0.92
+}
+```
+
 ## getOptions
 
 Feature: Get editor options

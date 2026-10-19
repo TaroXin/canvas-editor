@@ -796,6 +796,10 @@ ul {
   background-image: url('./assets/images/print.svg');
 }
 
+.menu-item__pdf i {
+  background-image: url('./assets/images/pdf.svg');
+}
+
 .catalog {
   width: 250px;
   position: fixed;

@@ -134,6 +134,7 @@ export class Command {
   public executeComputeElementListHeight: CommandAdapt['computeElementListHeight']
   public getCatalog: CommandAdapt['getCatalog']
   public getImage: CommandAdapt['getImage']
+  public getPdf: CommandAdapt['getPdf']
   public getOptions: CommandAdapt['getOptions']
   public getValue: CommandAdapt['getValue']
   public getValueAsync: CommandAdapt['getValueAsync']
@@ -589,6 +590,7 @@ export class Command {
     )
     // 获取
     this.getImage = adapt.getImage.bind(adapt)
+    this.getPdf = adapt.getPdf.bind(adapt)
     this.getOptions = adapt.getOptions.bind(adapt)
     this.getValue = adapt.getValue.bind(adapt)
     this.getValueAsync = adapt.getValueAsync.bind(adapt)

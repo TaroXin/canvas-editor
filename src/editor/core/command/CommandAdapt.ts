@@ -131,6 +131,7 @@ import {
 } from '../../utils/element'
 import { mergeOption } from '../../utils/option'
 import { print } from '../../utils/print'
+import { createPdf } from '../../utils/pdf'
 import { compareElementList } from '../../utils/diff'
 import { Control } from '../draw/control/Control'
 import { Draw } from '../draw/Draw'
@@ -156,7 +157,7 @@ import {
 import { IAreaBadge, IBadge } from '../../interface/Badge'
 import { IRichtextOption } from '../../interface/Command'
 import { WatermarkType } from '../../dataset/enum/Watermark'
-import { IPrintOption } from '@/editor/interface/Print'
+import { IGetPdfOption, IPrintOption } from '@/editor/interface/Print'
 
 export class CommandAdapt {
   private draw: Draw
@@ -1591,6 +1592,29 @@ export class CommandAdapt {
 
   public getImage(payload?: IGetImageOption): Promise<string[]> {
     return this.draw.getDataURL(payload)
+  }
+
+  public async getPdf(payload?: IGetPdfOption): Promise<Blob> {
+    const { scale, printPixelRatio } = this.options
+    const pixelRatio = payload?.pixelRatio ?? printPixelRatio
+    // 与打印一致：按原始比例、打印模式输出
+    if (scale !== 1) {
+      this.draw.setPageScale(1)
+    }
+    try {
+      const dataURLList = await this.draw.getDataURL({
+        pixelRatio,
+        mode: EditorMode.PRINT
+      })
+      return await createPdf(dataURLList, {
+        pixelRatio,
+        quality: payload?.quality ?? 0.92
+      })
+    } finally {
+      if (scale !== 1) {
+        this.draw.setPageScale(scale)
+      }
+    }
   }
 
   public getOptions(): DeepRequired<IEditorOption> {

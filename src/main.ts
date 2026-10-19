@@ -1333,6 +1333,19 @@ window.onload = function () {
     instance.command.executePrint()
   }
 
+  const pdfDom = document.querySelector<HTMLDivElement>('.menu-item__pdf')!
+  pdfDom.title = '导出PDF'
+  pdfDom.onclick = async function () {
+    console.log('pdf')
+    const blob = await instance.command.getPdf()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `canvas-editor-${Date.now()}.pdf`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   // 6. 目录显隐 | 页面模式 | 纸张缩放 | 纸张大小 | 纸张方向 | 页边距 | 全屏 | 设置
   const editorOptionDom =
     document.querySelector<HTMLDivElement>('.editor-option')!

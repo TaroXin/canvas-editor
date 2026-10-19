@@ -47,6 +47,21 @@ const {
 const base64StringList = await instance.command.getImage(option?: IGetImageOption)
 ```
 
+## getPdf
+
+功能：获取文档 PDF（每页渲染为图片，与打印效果一致）
+
+用法：
+
+```javascript
+const blob = await instance.command.getPdf(option?: IGetPdfOption)
+
+interface IGetPdfOption {
+  pixelRatio?: number // 图片像素比。默认：printPixelRatio
+  quality?: number // JPEG 压缩质量（0-1）。默认：0.92
+}
+```
+
 ## getOptions
 
 功能：获取编辑器配置
