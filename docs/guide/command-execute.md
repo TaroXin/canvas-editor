@@ -542,7 +542,7 @@ instance.command.executeTableTdVerticalAlign(payload: VerticalAlign)
 
 ## executeTableBorderType
 
-功能：表格边框类型
+功能：表格边框类型（同时清除单元格单独设置的边框）
 
 用法：
 

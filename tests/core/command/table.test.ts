@@ -8,6 +8,7 @@ import { formatElementList } from '@/editor/utils/element'
 import { createTestEditor } from '../../factories/editor'
 import { TraceType } from '@/editor/dataset/enum/Trace'
 import { ElementType } from '@/editor/dataset/enum/Element'
+import { TableBorder, TdBorder } from '@/editor/dataset/enum/table/Table'
 
 describe('表格与分隔命令', () => {
   let ctx: ReturnType<typeof createTestEditor>
@@ -338,6 +339,85 @@ describe('表格与分隔命令', () => {
     expect(td.borderColor).toBeUndefined()
     tableOperate.tableTdBorderWidth(0)
     expect(td.borderWidth).toBeUndefined()
+
+    draw.destroy()
+    container.remove()
+  })
+
+  it('设置表格边框类型时清除单元格单独设置的边框', () => {
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const options = mergeOption({ width: 794, height: 1123 })
+    const main = [
+      {
+        type: 'table' as any,
+        value: '',
+        borderType: TableBorder.EMPTY,
+        colgroup: [{ width: 200 }, { width: 200 }],
+        trList: [
+          {
+            height: 60,
+            tdList: [
+              {
+                colspan: 1,
+                rowspan: 1,
+                borderTypes: [TdBorder.LEFT, TdBorder.RIGHT],
+                value: [{ value: '\n' }, { value: 'A' }]
+              },
+              {
+                colspan: 1,
+                rowspan: 1,
+                borderTypes: [TdBorder.RIGHT],
+                value: [{ value: '\n' }, { value: 'B' }]
+              }
+            ]
+          }
+        ]
+      },
+      { value: '\n' }
+    ]
+    formatElementList(main, {
+      editorOptions: options,
+      isForceCompensation: true
+    })
+    const draw = new Draw(
+      container,
+      options,
+      { header: [{ value: '\n' }], main, footer: [{ value: '\n' }] },
+      new Listener(),
+      new EventBus(),
+      new Override()
+    )
+    draw.render()
+
+    const originalElementList = draw.getOriginalElementList()
+    const tableIndex = originalElementList.findIndex(
+      (element: any) => element.type === 'table'
+    )
+    const table = originalElementList[tableIndex]
+    const td = table.trList![0].tdList[0]
+    draw.getPosition().setPositionContext({
+      isTable: true,
+      index: tableIndex,
+      trIndex: 0,
+      tdIndex: 0,
+      tdId: td.id,
+      trId: table.trList![0].id,
+      tableId: table.id
+    })
+    const tableOperate = draw.getTableOperate()
+    const tdBorderTypes = () =>
+      table.trList![0].tdList.map(item => item.borderTypes)
+
+    // 表格已是无框线，单元格边框仍需清除
+    tableOperate.tableBorderType(TableBorder.EMPTY)
+    expect(table.borderType).toBe(TableBorder.EMPTY)
+    expect(tdBorderTypes()).toEqual([undefined, undefined])
+
+    table.trList![0].tdList[1].borderTypes = [TdBorder.TOP]
+    tableOperate.tableBorderType(TableBorder.ALL)
+    expect(table.borderType).toBe(TableBorder.ALL)
+    expect(tdBorderTypes()).toEqual([undefined, undefined])
 
     draw.destroy()
     container.remove()

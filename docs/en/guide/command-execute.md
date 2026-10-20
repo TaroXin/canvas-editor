@@ -542,7 +542,7 @@ instance.command.executeTableTdVerticalAlign(payload: VerticalAlign)
 
 ## executeTableBorderType
 
-Feature: Table border type
+Feature: Table border type (also clears borders set on individual cells)
 
 Usage:
 

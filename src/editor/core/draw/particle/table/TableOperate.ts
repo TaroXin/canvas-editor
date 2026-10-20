@@ -846,13 +846,18 @@ export class TableOperate {
     const { index } = positionContext
     const originalElementList = this.draw.getOriginalElementList()
     const element = originalElementList[index!]
+    // 表格边框作用于整个表格：同时清除单元格单独设置的边框，避免残留或重复绘制
+    const tdList = element.trList?.flatMap(tr => tr.tdList) || []
+    const hasTdBorder = tdList.some(td => td.borderTypes?.length)
     if (
-      (!element.borderType && payload === TableBorder.ALL) ||
-      element.borderType === payload
+      !hasTdBorder &&
+      ((!element.borderType && payload === TableBorder.ALL) ||
+        element.borderType === payload)
     ) {
       return
     }
     element.borderType = payload
+    tdList.forEach(td => delete td.borderTypes)
     const { endIndex } = this.range.getRange()
     this.draw.render({
       curIndex: endIndex
