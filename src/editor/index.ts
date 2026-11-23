@@ -1,7 +1,7 @@
 import './assets/css/index.css'
 import { version } from '../../package.json'
 import { IEditorData, IEditorOption, IEditorResult } from './interface/Editor'
-import { IElement } from './interface/Element'
+import { IElement, ITabStop } from './interface/Element'
 import { Draw } from './core/draw/Draw'
 import { Command } from './core/command/Command'
 import { CommandAdapt } from './core/command/CommandAdapt'
@@ -23,9 +23,11 @@ import {
   IRegisterContextMenu
 } from './interface/contextmenu/ContextMenu'
 import {
+  BackendType,
   EditorComponent,
   EditorZone,
   EditorMode,
+  PageLayout,
   PageMode,
   PaperDirection,
   WordBreak,
@@ -51,6 +53,7 @@ import { TableBorder, TdBorder, TdSlash } from './dataset/enum/table/Table'
 import { MaxHeightRatio, NumberType } from './dataset/enum/Common'
 import { TitleLevel } from './dataset/enum/Title'
 import { ListStyle, ListType } from './dataset/enum/List'
+import { TabStopLeader, TabStopType } from './dataset/enum/TabStop'
 import { ICatalog, ICatalogItem } from './interface/Catalog'
 import { Plugin } from './core/plugin/Plugin'
 import { UsePlugin } from './interface/Plugin'
@@ -78,6 +81,7 @@ import { IBadge } from './interface/Badge'
 import { WatermarkType, WatermarkLayer } from './dataset/enum/Watermark'
 import { INTERNAL_SHORTCUT_KEY } from './dataset/constant/Shortcut'
 import { IGraffitiData } from './interface/Graffiti'
+import { TextDirection } from './dataset/enum/TextDirection'
 
 export default class Editor {
   public command: Command
@@ -198,8 +202,10 @@ export {
   ElementType,
   ControlType,
   EditorComponent,
+  PageLayout,
   PageMode,
   RenderMode,
+  BackendType,
   ImageDisplay,
   Command,
   KeyMap,
@@ -214,6 +220,8 @@ export {
   TitleLevel,
   ListType,
   ListStyle,
+  TabStopType,
+  TabStopLeader,
   WordBreak,
   ControlIndentation,
   ControlComponent,
@@ -228,12 +236,21 @@ export {
   FlexDirection,
   CheckboxMarkType,
   WatermarkType,
-  WatermarkLayer
+  WatermarkLayer,
+  TextDirection
 }
+
+export type {
+  IControlConditionRule,
+  IControlEffect,
+  RuleContext,
+  RuleContextValue
+} from './interface/Control'
 
 // 对外类型
 export type {
   IElement,
+  ITabStop,
   IEditorData,
   IEditorOption,
   IEditorResult,

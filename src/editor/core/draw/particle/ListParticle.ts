@@ -3,12 +3,14 @@ import { ulStyleMapping } from '../../../dataset/constant/List'
 import { ElementType } from '../../../dataset/enum/Element'
 import { KeyMap } from '../../../dataset/enum/KeyMap'
 import { ListStyle, ListType, UlStyle } from '../../../dataset/enum/List'
+import { TextDirection } from '../../../dataset/enum/TextDirection'
 import { DeepRequired } from '../../../interface/Common'
 import { IEditorOption } from '../../../interface/Editor'
 import { IElement, IElementPosition } from '../../../interface/Element'
 import { IRow, IRowElement } from '../../../interface/Row'
 import { getUUID } from '../../../utils'
 import { RangeManager } from '../../range/RangeManager'
+import type { IRenderContext } from '../../render/model/RenderContext'
 import { Draw } from '../Draw'
 
 export class ListParticle {
@@ -299,7 +301,8 @@ export class ListParticle {
 
   public computeListStyle(
     ctx: CanvasRenderingContext2D,
-    elementList: IElement[]
+    elementList: IElement[],
+    scale = this.options.scale
   ): Map<string, number> {
     const listStyleMap = new Map<string, number>()
     let start = 0
@@ -314,7 +317,7 @@ export class ListParticle {
         if (curElement.listId && curElement.listId !== curListId) {
           // 列表结束
           if (curElementList.length) {
-            const width = this.getListStyleWidth(ctx, curElementList)
+            const width = this.getListStyleWidth(ctx, curElementList, scale)
             listStyleMap.set(curListId!, width)
           }
           curListId = curElement.listId
@@ -324,7 +327,7 @@ export class ListParticle {
       start++
     }
     if (curElementList.length) {
-      const width = this.getListStyleWidth(ctx, curElementList)
+      const width = this.getListStyleWidth(ctx, curElementList, scale)
       listStyleMap.set(curListId!, width)
     }
     return listStyleMap
@@ -354,9 +357,10 @@ export class ListParticle {
 
   public getListStyleWidth(
     ctx: CanvasRenderingContext2D,
-    listElementList: IElement[]
+    listElementList: IElement[],
+    scale = this.options.scale
   ): number {
-    const { scale, checkbox } = this.options
+    const { checkbox } = this.options
     const startElement = listElementList[0]
     // 非递增样式返回固定值
     if (
@@ -382,13 +386,13 @@ export class ListParticle {
     const text = `${this.MEASURE_BASE_TEXT.repeat(String(count).length - 1 || 1)}${
       KeyMap.PERIOD
     }`
-    const textMetrics = ctx.measureText(text)
+    const textMetrics = this.draw.getTextMeasurer().measureText(text, ctx.font)
     ctx.restore()
     return Math.ceil((textMetrics.width + this.LIST_GAP) * scale)
   }
 
   public drawListStyle(
-    ctx: CanvasRenderingContext2D,
+    ctx: IRenderContext,
     row: IRow,
     position: IElementPosition
   ) {
@@ -412,7 +416,10 @@ export class ListParticle {
     const indentWidth = startElement.listLevel
       ? this.LIST_INDENT_WIDTH * startElement.listLevel * scale
       : 0
-    const x = startX - offsetX! + indentWidth + tabWidth
+    const isRtl = row.direction === TextDirection.RTL
+    const x = isRtl
+      ? startX + offsetX! - indentWidth - tabWidth
+      : startX - offsetX! + indentWidth + tabWidth
     const y = startY + ascent
     // 复选框样式特殊处理
     if (startElement.listStyle === ListStyle.CHECKBOX) {
@@ -420,7 +427,8 @@ export class ListParticle {
       const checkboxRowElement: IRowElement = {
         ...startElement,
         checkbox: {
-          value: !!startElement.checkbox?.value
+          value: !!startElement.checkbox?.value,
+          markType: startElement.checkbox?.markType
         },
         metrics: {
           ...startElement.metrics,
@@ -430,7 +438,7 @@ export class ListParticle {
       }
       this.draw.getCheckboxParticle().render({
         ctx,
-        x: x - gap * scale,
+        x: isRtl ? x + gap * scale : x - gap * scale,
         y,
         index: 0,
         row: {
@@ -455,6 +463,7 @@ export class ListParticle {
       if (!text) return
       ctx.save()
       ctx.font = this.getListFontStyle(elementList, scale)
+      if (row.direction) ctx.direction = row.direction
       ctx.fillText(text, x, y)
       ctx.restore()
     }

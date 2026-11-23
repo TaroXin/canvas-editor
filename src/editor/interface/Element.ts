@@ -1,10 +1,12 @@
 import { ImageDisplay } from '../dataset/enum/Common'
 import { ControlComponent } from '../dataset/enum/Control'
 import { PaperDirection } from '../dataset/enum/Editor'
+import { TextDirection } from '../dataset/enum/TextDirection'
 import { ElementType } from '../dataset/enum/Element'
 import { TraceType } from '../dataset/enum/Trace'
 import { ListStyle, ListType } from '../dataset/enum/List'
 import { RowFlex } from '../dataset/enum/Row'
+import { TabStopLeader, TabStopType } from '../dataset/enum/TabStop'
 import { TitleLevel } from '../dataset/enum/Title'
 import { TableBorder } from '../dataset/enum/table/Table'
 import { VerticalAlign } from '../dataset/enum/VerticalAlign'
@@ -40,14 +42,29 @@ export interface IElementStyle {
   italic?: boolean
   underline?: boolean
   strikeout?: boolean
+  direction?: TextDirection
   rowFlex?: RowFlex
   rowMargin?: number
   spacingBefore?: number
   spacingAfter?: number
+  indentLeft?: number
+  indentRight?: number
+  // 首行相对左缩进的额外偏移，负数为悬挂缩进
+  indentFirstLine?: number
+  // 段落制表位（距版心左缘，随段内元素存储）
+  tabStops?: ITabStop[]
   level?: TitleLevel
   title?: ITitle
   letterSpacing?: number
   textDecoration?: ITextDecoration
+}
+
+export interface ITabStop {
+  // 距版心左缘的距离
+  position: number
+  type: TabStopType
+  // TAB 推进空隙的填充样式
+  leader?: TabStopLeader
 }
 
 export interface IElementRule {
@@ -185,6 +202,8 @@ export interface IImageBasic {
     pageNo?: number
   }
   imgCrop?: IImageCrop
+  // 顺时针旋转角度（度）
+  imgRotation?: number
   imgCaption?: IImageCaption
   // 嵌入型图片、公式与同行文字的垂直对齐方式（默认底端对齐基线）
   imgVerticalAlign?: VerticalAlign
@@ -218,6 +237,10 @@ export interface IPageBreakElement {
   paperDirection?: PaperDirection
 }
 
+export interface IFootnoteElement {
+  footnoteId?: string
+}
+
 export type IElement = IElementBasic &
   IElementStyle &
   IElementRule &
@@ -238,7 +261,8 @@ export type IElement = IElementBasic &
   IListElement &
   IAreaElement &
   ILabelElement &
-  IPageBreakElement
+  IPageBreakElement &
+  IFootnoteElement
 
 export interface IElementMetrics {
   width: number
@@ -259,6 +283,7 @@ export interface IElementPosition {
   metrics: IElementMetrics
   isFirstLetter: boolean
   isLastLetter: boolean
+  bidiLevel?: number
   columnIndex?: number
   tableFragment?: ITableRowFragment // 表格跨页渲染片段信息
   coordinate: {

@@ -10,6 +10,7 @@ import {
 } from '../../../../utils/element'
 import { isApple } from '../../../../utils/ua'
 import { CanvasEvent } from '../../CanvasEvent'
+import { moveVisualCaret } from './visual'
 
 export function right(evt: KeyboardEvent, host: CanvasEvent) {
   const draw = host.getDraw()
@@ -18,10 +19,18 @@ export function right(evt: KeyboardEvent, host: CanvasEvent) {
   const position = draw.getPosition()
   const cursorPosition = position.getCursorPosition()
   if (!cursorPosition) return
+  if (cursorPosition.bidiLevel !== undefined && moveVisualCaret(evt, host, 1)) {
+    return
+  }
   const { index } = cursorPosition
   const positionList = position.getPositionList()
   const positionContext = position.getPositionContext()
-  if (index > positionList.length - 1 && !positionContext.isTable) return
+  if (
+    (index > positionList.length - 1 && !positionContext.isTable) ||
+    (positionContext.isFootnote && index >= positionList.length - 1)
+  ) {
+    return
+  }
   const rangeManager = draw.getRange()
   const { startIndex, endIndex } = rangeManager.getRange()
   const isCollapsed = rangeManager.getIsCollapsed()

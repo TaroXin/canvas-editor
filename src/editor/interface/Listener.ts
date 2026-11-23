@@ -1,11 +1,12 @@
-import { EditorZone, PageMode } from '../dataset/enum/Editor'
+import { EditorZone, PageLayout, PageMode } from '../dataset/enum/Editor'
 import { ElementType } from '../dataset/enum/Element'
 import { ListStyle, ListType } from '../dataset/enum/List'
 import { RowFlex } from '../dataset/enum/Row'
+import { TextDirection } from '../dataset/enum/TextDirection'
 import { TitleLevel } from '../dataset/enum/Title'
 import { IControlChangeResult, IControlContentChangeResult } from './Control'
 import { IEditorResult } from './Editor'
-import { IElement } from './Element'
+import { IElement, ITabStop } from './Element'
 import { IPositionContext } from './Position'
 import { IRange } from './Range'
 import { ITextDecoration } from './Text'
@@ -24,9 +25,14 @@ export interface IRangeStyle {
   color: string | null
   highlight: string | null
   rowFlex: RowFlex | null
+  direction: TextDirection
   rowMargin: number
   spacingBefore: number
   spacingAfter: number
+  indentLeft: number
+  indentRight: number
+  indentFirstLine: number
+  tabStops: ITabStop[] | null
   dashArray: number[]
   level: TitleLevel | null
   listType: ListType | null
@@ -59,6 +65,8 @@ export type IControlContentChange = (
 ) => void
 
 export type IPageModeChange = (payload: PageMode) => void
+
+export type IPageLayoutChange = (payload: PageLayout) => void
 
 export type IZoneChange = (payload: EditorZone) => void
 

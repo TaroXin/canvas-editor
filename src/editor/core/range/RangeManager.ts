@@ -3,6 +3,7 @@ import { ZERO } from '../../dataset/constant/Common'
 import { TEXTLIKE_ELEMENT_TYPE } from '../../dataset/constant/Element'
 import { ControlComponent } from '../../dataset/enum/Control'
 import { EditorContext } from '../../dataset/enum/Editor'
+import { TextDirection } from '../../dataset/enum/TextDirection'
 import { IControlContext } from '../../interface/Control'
 import { IEditorOption } from '../../interface/Editor'
 import { IElement } from '../../interface/Element'
@@ -17,6 +18,7 @@ import {
 } from '../../interface/Range'
 import { getAnchorElement, isElementTraceDeleted } from '../../utils/element'
 import { Draw } from '../draw/Draw'
+import type { IRenderContext } from '../render/model/RenderContext'
 import { EventBus } from '../event/eventbus/EventBus'
 import { HistoryManager } from '../history/HistoryManager'
 import { Listener } from '../listener/Listener'
@@ -48,6 +50,15 @@ export class RangeManager {
 
   public getRange(): IRange {
     return this.range
+  }
+
+  public getDirection(): TextDirection {
+    const { endIndex } = this.range
+    if (!~endIndex) return this.options.defaultDirection
+    const elementList = this.draw.getElementList()
+    const anchorElement = getAnchorElement(elementList, endIndex)
+    if (!anchorElement) return this.options.defaultDirection
+    return anchorElement.direction ?? this.options.defaultDirection
   }
 
   public clearRange() {
@@ -425,6 +436,7 @@ export class RangeManager {
     startTrIndex?: number,
     endTrIndex?: number
   ) {
+    this.range.bidiAffinity = undefined
     // 判断光标是否改变
     const isChange = this.getIsRangeChange(
       startIndex,
@@ -469,6 +481,10 @@ export class RangeManager {
     }
   }
 
+  public setBidiAffinity(affinity: IRange['bidiAffinity']): void {
+    this.range.bidiAffinity = affinity
+  }
+
   public replaceRange(range: IRange) {
     this.setRange(
       range.startIndex,
@@ -479,6 +495,7 @@ export class RangeManager {
       range.startTrIndex,
       range.endTrIndex
     )
+    this.setBidiAffinity(range.bidiAffinity)
   }
 
   public shrinkRange() {
@@ -530,6 +547,10 @@ export class RangeManager {
     const rowMargin = curElement.rowMargin ?? this.options.defaultRowMargin
     const spacingBefore = curElement.spacingBefore ?? 0
     const spacingAfter = curElement.spacingAfter ?? 0
+    const indentLeft = curElement.indentLeft ?? 0
+    const indentRight = curElement.indentRight ?? 0
+    const indentFirstLine = curElement.indentFirstLine ?? 0
+    const tabStops = curElement.tabStops || null
     const dashArray = curElement.dashArray || []
     const level = curElement.level || null
     const listType = curElement.listType || null
@@ -557,9 +578,14 @@ export class RangeManager {
       color,
       highlight,
       rowFlex,
+      direction: this.getDirection(),
       rowMargin,
       spacingBefore,
       spacingAfter,
+      indentLeft,
+      indentRight,
+      indentFirstLine,
+      tabStops,
       dashArray,
       level,
       listType,
@@ -601,9 +627,14 @@ export class RangeManager {
       color: null,
       highlight: null,
       rowFlex: null,
+      direction: this.options.defaultDirection,
       rowMargin,
       spacingBefore: 0,
       spacingAfter: 0,
+      indentLeft: 0,
+      indentRight: 0,
+      indentFirstLine: 0,
+      tabStops: null,
       dashArray: [],
       level: null,
       listType: null,
@@ -712,7 +743,7 @@ export class RangeManager {
   }
 
   public render(
-    ctx: CanvasRenderingContext2D,
+    ctx: IRenderContext,
     x: number,
     y: number,
     width: number,

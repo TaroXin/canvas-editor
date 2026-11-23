@@ -14,6 +14,7 @@ import {
 import { getUUID, indexOf, isNumber } from '../../../utils'
 import { Position } from '../../position/Position'
 import { RangeManager } from '../../range/RangeManager'
+import type { IRenderContext } from '../../render/model/RenderContext'
 import { Draw } from '../Draw'
 
 export interface INavigateInfo {
@@ -195,7 +196,8 @@ export class Search {
   ): ISearchResult[] {
     const { isRegEnable = false, isIgnoreCase = true } =
       this.searchOptions || {}
-    const keyword = isIgnoreCase ? payload.toLocaleLowerCase() : payload
+    const keyword =
+      !isRegEnable && isIgnoreCase ? payload.toLocaleLowerCase() : payload
     const searchMatchList: ISearchResult[] = []
     // 分组
     const elementListGroup: {
@@ -261,13 +263,15 @@ export class Search {
         )
         .filter(Boolean)
         .join('')
-      if (isIgnoreCase) {
+      if (!isRegEnable && isIgnoreCase) {
         text = text.toLocaleLowerCase()
       }
       // 匹配的结果列表
       const matchList: { index: number; length: number }[] = []
       // 从索引0开始依次匹配
-      const searchStr = isRegEnable ? new RegExp(payload) : payload
+      const searchStr = isRegEnable
+        ? new RegExp(payload, isIgnoreCase ? 'i' : '')
+        : payload
       let { index, length } = indexOf(text, searchStr)
       while (index !== -1 && length !== 0) {
         matchList.push({
@@ -342,7 +346,7 @@ export class Search {
     }
   }
 
-  public render(ctx: CanvasRenderingContext2D, pageIndex: number) {
+  public render(ctx: IRenderContext, pageIndex: number) {
     if (
       !this.searchMatchList ||
       !this.searchMatchList.length ||

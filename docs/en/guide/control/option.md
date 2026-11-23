@@ -4,42 +4,42 @@ The control's properties in document data (`IElement.control`), organized by con
 
 ## Common Properties (all types)
 
-| Property        | Type                                                                | Description                                                        |
-| --------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `type`          | `'text' \| 'select' \| 'checkbox' \| 'radio' \| 'date' \| 'number'` | Control type                                                       |
-| `value`         | `IElement[] \| null`                                                | Control value                                                      |
-| `placeholder`   | `string`                                                            | Placeholder                                                        |
-| `conceptId`     | `string`                                                            | Concept id (shared by multiple controls; used by cascade/getValue) |
-| `groupId`       | `string`                                                            | Group id                                                           |
-| `prefix`        | `string`                                                            | Prefix character                                                   |
-| `postfix`       | `string`                                                            | Postfix character                                                  |
-| `preText`       | `string`                                                            | Pre text                                                           |
-| `postText`      | `string`                                                            | Post text                                                          |
-| `minWidth`      | `number`                                                            | Minimum width                                                      |
-| `underline`     | `boolean`                                                           | Underline                                                          |
-| `border`        | `boolean`                                                           | Border                                                             |
-| `extension`     | `unknown`                                                           | Extension data                                                     |
-| `indentation`   | `ControlIndentation`                                                | Indentation                                                        |
-| `rowFlex`       | `RowFlex`                                                           | Row alignment                                                      |
-| `deletable`     | `boolean`                                                           | Deletable. Default: true                                           |
-| `disabled`      | `boolean`                                                           | Disabled (not editable)                                            |
-| `pasteDisabled` | `boolean`                                                           | Paste disabled                                                     |
-| `hide`          | `boolean`                                                           | Hidden                                                             |
-| `required`      | `boolean`                                                           | Required (used in validation, can be toggled by cascades)          |
-| `cascade`       | `IControlCascadeRule[]`                                             | Cascade rules, see: Control-Cascade                                |
-| `validation`    | `IControlValidation`                                                | Validation rules, see: Control-Validation                          |
-| `compute`       | `string`                                                            | Compute expression, see: Control-Cascade                           |
-| `activeBackgroundColor` | `string`                                                      | Background color when active (overrides the global option)         |
-| `disabledBackgroundColor` | `string`                                                    | Background color when disabled (overrides the global option)       |
-| `existValueBackgroundColor` | `string`                                                  | Background color when has value (overrides the global option)      |
-| `noValueBackgroundColor` | `string`                                                      | Background color when no value (overrides the global option)       |
-| `font`          | `string`                                                            | Value font                                                         |
-| `size`          | `number`                                                            | Value size                                                         |
-| `bold`          | `boolean`                                                           | Value bold                                                         |
-| `color`         | `string`                                                            | Value color                                                        |
-| `highlight`     | `string`                                                            | Value highlight                                                    |
-| `italic`        | `boolean`                                                           | Value italic                                                       |
-| `strikeout`     | `boolean`                                                           | Value strikeout                                                    |
+| Property                    | Type                                                                | Description                                                        |
+| --------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `type`                      | `'text' \| 'select' \| 'checkbox' \| 'radio' \| 'date' \| 'number'` | Control type                                                       |
+| `value`                     | `IElement[] \| null`                                                | Control value                                                      |
+| `placeholder`               | `string \| IElement[]`                                              | Placeholder text, image, or mixed content                          |
+| `conceptId`                 | `string`                                                            | Concept id (shared by multiple controls; used by cascade/getValue) |
+| `groupId`                   | `string`                                                            | Group id                                                           |
+| `prefix`                    | `string`                                                            | Prefix character                                                   |
+| `postfix`                   | `string`                                                            | Postfix character                                                  |
+| `preText`                   | `string`                                                            | Pre text                                                           |
+| `postText`                  | `string`                                                            | Post text                                                          |
+| `minWidth`                  | `number`                                                            | Minimum width                                                      |
+| `underline`                 | `boolean`                                                           | Underline                                                          |
+| `border`                    | `boolean`                                                           | Border                                                             |
+| `extension`                 | `unknown`                                                           | Extension data                                                     |
+| `indentation`               | `ControlIndentation`                                                | Indentation                                                        |
+| `rowFlex`                   | `RowFlex`                                                           | Row alignment                                                      |
+| `deletable`                 | `boolean`                                                           | Deletable. Default: true                                           |
+| `disabled`                  | `boolean`                                                           | Disabled (not editable)                                            |
+| `pasteDisabled`             | `boolean`                                                           | Paste disabled                                                     |
+| `hide`                      | `boolean`                                                           | Hidden                                                             |
+| `required`                  | `boolean`                                                           | Required (used in validation, can be toggled by cascades)          |
+| `cascade`                   | `IControlCascadeRule[]`                                             | Cascade rules, see: Control-Cascade                                |
+| `validation`                | `IControlValidation`                                                | Validation rules, see: Control-Validation                          |
+| `compute`                   | `string`                                                            | Compute expression, see: Control-Cascade                           |
+| `activeBackgroundColor`     | `string`                                                            | Background color when active (overrides the global option)         |
+| `disabledBackgroundColor`   | `string`                                                            | Background color when disabled (overrides the global option)       |
+| `existValueBackgroundColor` | `string`                                                            | Background color when has value (overrides the global option)      |
+| `noValueBackgroundColor`    | `string`                                                            | Background color when no value (overrides the global option)       |
+| `font`                      | `string`                                                            | Value font                                                         |
+| `size`                      | `number`                                                            | Value size                                                         |
+| `bold`                      | `boolean`                                                           | Value bold                                                         |
+| `color`                     | `string`                                                            | Value color                                                        |
+| `highlight`                 | `string`                                                            | Value highlight                                                    |
+| `italic`                    | `boolean`                                                           | Value italic                                                       |
+| `strikeout`                 | `boolean`                                                           | Value strikeout                                                    |
 
 ## TEXT Control
 
@@ -88,7 +88,7 @@ Common properties, plus:
 | ------------ | -------- | ----------------------------------------- |
 | `dateFormat` | `string` | Date format. Default: yyyy-MM-dd HH:mm:ss |
 
-`dateFormat` tokens: `yyyy`/`YYYY` year, `MM` month, `dd`/`DD` day, `HH` hour (24-hour), `hh` hour (12-hour), `mm` minute, `ss` second, `SSS` millisecond. Other characters are kept as-is, e.g. `yyyy年MM月dd日 HH时mm分ss秒`.
+`dateFormat` tokens: `yyyy`/`YYYY` year, `MM` month, `dd`/`DD` day, `HH` hour (24-hour), `hh` hour (12-hour), `mm` minute, `ss` second, `SSS` millisecond. Other characters are kept as-is, e.g. `yyyy年MM月dd日 HH时mm分ss秒`. Note: `hh` has no AM/PM marker, so values are parsed as 24-hour (12 is treated as noon).
 
 ## NUMBER Control
 

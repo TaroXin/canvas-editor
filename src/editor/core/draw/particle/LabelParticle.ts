@@ -1,6 +1,7 @@
 import { DeepRequired } from '../../../interface/Common'
 import { IEditorOption } from '../../../interface/Editor'
 import { IRowElement } from '../../../interface/Row'
+import { IRenderContext } from '../../render/model/RenderContext'
 import { Draw } from '../Draw'
 
 export class LabelParticle {
@@ -11,10 +12,11 @@ export class LabelParticle {
   }
 
   public render(
-    ctx: CanvasRenderingContext2D,
+    ctx: IRenderContext,
     element: IRowElement,
     x: number,
-    y: number
+    y: number,
+    direction?: CanvasDirection
   ) {
     const {
       scale,
@@ -36,6 +38,10 @@ export class LabelParticle {
     // 设置字体大小
     ctx.save()
     ctx.font = element.style
+    if (direction) {
+      ctx.direction = direction
+      ctx.textAlign = 'left'
+    }
     const { width, height, boundingBoxAscent } = element.metrics
 
     // 绘制圆角矩形背景
@@ -57,7 +63,7 @@ export class LabelParticle {
   }
 
   private _drawRoundedRect(
-    ctx: CanvasRenderingContext2D,
+    ctx: IRenderContext,
     x: number,
     y: number,
     width: number,

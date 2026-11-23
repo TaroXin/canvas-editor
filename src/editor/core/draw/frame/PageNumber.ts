@@ -1,9 +1,11 @@
 import { FORMAT_PLACEHOLDER } from '../../../dataset/constant/PageNumber'
 import { NumberType } from '../../../dataset/enum/Common'
 import { RowFlex } from '../../../dataset/enum/Row'
+import { TextDirection } from '../../../dataset/enum/TextDirection'
 import { DeepRequired } from '../../../interface/Common'
 import { IEditorOption } from '../../../interface/Editor'
 import { convertNumberToChinese } from '../../../utils'
+import type { IRenderContext } from '../../render/model/RenderContext'
 import { Draw } from '../Draw'
 
 export class PageNumber {
@@ -28,7 +30,7 @@ export class PageNumber {
     return text.replace(replaceReg, pageNoText)
   }
 
-  public render(ctx: CanvasRenderingContext2D, pageNo: number) {
+  public render(ctx: IRenderContext, pageNo: number) {
     const {
       scale,
       pageNumber: {
@@ -67,18 +69,23 @@ export class PageNumber {
     // 计算y位置
     const pageNumberBottom = this.draw.getPageNumberBottom()
     const y = height - pageNumberBottom
+    const fontStyle = `${size * scale}px ${font}`
     ctx.save()
     ctx.fillStyle = color
-    ctx.font = `${size * scale}px ${font}`
+    ctx.font = fontStyle
     // 计算x位置-居左、居中、居右
     let x = 0
-    const { width: textWidth } = ctx.measureText(text)
+    const { width: textWidth } = this.draw
+      .getTextMeasurer()
+      .measureText(text, fontStyle)
+    const isRtl = this.options.defaultDirection === TextDirection.RTL
     if (rowFlex === RowFlex.CENTER) {
       x = (width - textWidth) / 2
     } else if (rowFlex === RowFlex.RIGHT) {
-      x = width - textWidth - margins[1]
+      // 左右对齐在 RTL 页面中交换物理位置，居中不受影响
+      x = isRtl ? margins[3] : width - textWidth - margins[1]
     } else {
-      x = margins[3]
+      x = isRtl ? width - textWidth - margins[1] : margins[3]
     }
     ctx.fillText(text, x, y)
     ctx.restore()

@@ -19,8 +19,10 @@ import {
 } from '../../dataset/enum/Common'
 import { ControlComponent, ControlType } from '../../dataset/enum/Control'
 import {
+  BackendType,
   EditorMode,
   EditorZone,
+  PageLayout,
   PageMode,
   PaperDirection
 } from '../../dataset/enum/Editor'
@@ -29,6 +31,9 @@ import { ElementStyleKey } from '../../dataset/enum/ElementStyle'
 import { ListStyle, ListType } from '../../dataset/enum/List'
 import { MoveDirection } from '../../dataset/enum/Observer'
 import { RowFlex } from '../../dataset/enum/Row'
+import { TextDirection } from '../../dataset/enum/TextDirection'
+import { getVisualRangeRects } from '../bidi/resolver/BidiGeometry'
+import { getBidiCaretX } from '../bidi/resolver/BidiCaret'
 import { TableBorder, TdBorder, TdSlash } from '../../dataset/enum/table/Table'
 import { TitleLevel } from '../../dataset/enum/Title'
 import { VerticalAlign } from '../../dataset/enum/VerticalAlign'
@@ -41,6 +46,7 @@ import {
   IGetControlValueResult,
   ILocationControlOption,
   IRemoveControlOption,
+  RuleContext,
   ISetControlExtensionOption,
   ISetControlHighlightOption,
   ISetControlProperties,
@@ -76,6 +82,7 @@ import {
   IImageCaption,
   IImageCrop,
   IInsertElementListOption,
+  ITabStop,
   IUpdateElementByIdOption
 } from '../../interface/Element'
 import {
@@ -130,7 +137,7 @@ import {
   pickSurroundElementList
 } from '../../utils/element'
 import { mergeOption } from '../../utils/option'
-import { print } from '../../utils/print'
+import { print, printSvg } from '../../utils/print'
 import { createPdf } from '../../utils/pdf'
 import { compareElementList } from '../../utils/diff'
 import { Control } from '../draw/control/Control'
@@ -139,6 +146,7 @@ import { INavigateInfo, Search } from '../draw/interactive/Search'
 import { TableOperate } from '../draw/particle/table/TableOperate'
 import { CanvasEvent } from '../event/CanvasEvent'
 import { pasteByApi } from '../event/handlers/paste'
+import { getPagePointer } from '../event/pagePointer'
 import { HistoryManager } from '../history/HistoryManager'
 import { I18n } from '../i18n/I18n'
 import { Position } from '../position/Position'
@@ -158,6 +166,12 @@ import { IAreaBadge, IBadge } from '../../interface/Badge'
 import { IRichtextOption } from '../../interface/Command'
 import { WatermarkType } from '../../dataset/enum/Watermark'
 import { IGetPdfOption, IPrintOption } from '../../interface/Print'
+import {
+  IGetFootnoteValueOption,
+  IInsertFootnoteOption,
+  ILocationFootnoteOption,
+  ISetFootnoteValueOption
+} from '../../interface/Footnote'
 
 export class CommandAdapt {
   private draw: Draw
@@ -972,6 +986,23 @@ export class CommandAdapt {
     this.draw.render({ curIndex, isSetCursor })
   }
 
+  public direction(payload: TextDirection) {
+    const isReadonly = this.draw.isReadonly()
+    if (isReadonly) return
+    const { startIndex, endIndex } = this.range.getRange()
+    if (!~startIndex && !~endIndex) return
+    const paragraphElementList = this.range.getRangeParagraphElementList()
+    if (!paragraphElementList) return
+    this.draw.setElementProperty(paragraphElementList, { direction: payload })
+    const isSetCursor = startIndex === endIndex
+    const curIndex = isSetCursor ? endIndex : startIndex
+    this.draw.render({ curIndex, isSetCursor })
+  }
+
+  public getDirection(): TextDirection {
+    return this.range.getDirection()
+  }
+
   public rowMargin(payload: number) {
     const isReadonly = this.draw.isReadonly()
     if (isReadonly) return
@@ -1011,6 +1042,74 @@ export class CommandAdapt {
     if (!paragraphElementList) return
     paragraphElementList.forEach(element => {
       element.spacingAfter = payload
+    })
+    // 光标定位
+    const isSetCursor = startIndex === endIndex
+    const curIndex = isSetCursor ? endIndex : startIndex
+    this.draw.render({ curIndex, isSetCursor })
+  }
+
+  public indentLeft(payload: number) {
+    const isReadonly = this.draw.isReadonly()
+    if (isReadonly) return
+    const { startIndex, endIndex } = this.range.getRange()
+    if (!~startIndex && !~endIndex) return
+    const paragraphElementList = this.range.getRangeParagraphElementList()
+    if (!paragraphElementList) return
+    paragraphElementList.forEach(element => {
+      element.indentLeft = payload
+    })
+    // 光标定位
+    const isSetCursor = startIndex === endIndex
+    const curIndex = isSetCursor ? endIndex : startIndex
+    this.draw.render({ curIndex, isSetCursor })
+  }
+
+  public indentRight(payload: number) {
+    const isReadonly = this.draw.isReadonly()
+    if (isReadonly) return
+    const { startIndex, endIndex } = this.range.getRange()
+    if (!~startIndex && !~endIndex) return
+    const paragraphElementList = this.range.getRangeParagraphElementList()
+    if (!paragraphElementList) return
+    paragraphElementList.forEach(element => {
+      element.indentRight = payload
+    })
+    // 光标定位
+    const isSetCursor = startIndex === endIndex
+    const curIndex = isSetCursor ? endIndex : startIndex
+    this.draw.render({ curIndex, isSetCursor })
+  }
+
+  public indentFirstLine(payload: number) {
+    const isReadonly = this.draw.isReadonly()
+    if (isReadonly) return
+    const { startIndex, endIndex } = this.range.getRange()
+    if (!~startIndex && !~endIndex) return
+    const paragraphElementList = this.range.getRangeParagraphElementList()
+    if (!paragraphElementList) return
+    paragraphElementList.forEach(element => {
+      element.indentFirstLine = payload
+    })
+    // 光标定位
+    const isSetCursor = startIndex === endIndex
+    const curIndex = isSetCursor ? endIndex : startIndex
+    this.draw.render({ curIndex, isSetCursor })
+  }
+
+  public setTabStops(payload: ITabStop[]) {
+    const isReadonly = this.draw.isReadonly()
+    if (isReadonly) return
+    const { startIndex, endIndex } = this.range.getRange()
+    if (!~startIndex && !~endIndex) return
+    const paragraphElementList = this.range.getRangeParagraphElementList()
+    if (!paragraphElementList) return
+    // 位点按位置有序；空数组清除属性。各元素独立拷贝，避免段间共享引用
+    const stops = [...payload].sort((a, b) => a.position - b.position)
+    paragraphElementList.forEach(element => {
+      element.tabStops = stops.length
+        ? stops.map(stop => ({ ...stop }))
+        : undefined
     })
     // 光标定位
     const isSetCursor = startIndex === endIndex
@@ -1495,22 +1594,31 @@ export class CommandAdapt {
     }
     const { scale, printPixelRatio, paperDirection, width, height } =
       this.options
-    if (scale !== 1) {
-      this.draw.setPageScale(1)
-    }
-    const base64List = await this.draw.getDataURL({
-      pixelRatio: printPixelRatio,
-      mode: EditorMode.PRINT
-    })
-    await print(base64List, {
-      width,
-      height,
-      direction: paperDirection,
-      pageDirections: this.draw.getPageDirectionList(),
-      iframeInfoList: this.draw.getBlockParticle().pickIframeInfo()
-    })
-    if (scale !== 1) {
-      this.draw.setPageScale(scale)
+    try {
+      if (scale !== 1) {
+        this.draw.setPageScale(1)
+      }
+      const printOptions = {
+        width,
+        height,
+        direction: paperDirection,
+        pageDirections: this.draw.getPageDirectionList(),
+        iframeInfoList: this.draw.getBlockParticle().pickIframeInfo()
+      }
+      if (this.options.backend === BackendType.SVG) {
+        const pageList = await this.draw.getSvgPageList(EditorMode.PRINT)
+        await printSvg(pageList, printOptions)
+      } else {
+        const base64List = await this.draw.getDataURL({
+          pixelRatio: printPixelRatio,
+          mode: EditorMode.PRINT
+        })
+        await print(base64List, printOptions)
+      }
+    } finally {
+      if (scale !== 1) {
+        this.draw.setPageScale(scale)
+      }
     }
   }
 
@@ -1745,6 +1853,61 @@ export class CommandAdapt {
     return this.range.toString()
   }
 
+  // 查询指定选区的渲染矩形，不改变当前光标与选区
+  public getRangeRects(range: IRange): RangeRect[] {
+    const { startIndex, endIndex } = range
+    const positionList = this.position.getPositionListByRange(range)
+    if (
+      !positionList.length ||
+      startIndex < -1 ||
+      endIndex < startIndex ||
+      endIndex >= positionList.length
+    ) {
+      return []
+    }
+    if (startIndex === endIndex) {
+      const position = positionList[endIndex] || positionList[0]
+      const {
+        coordinate: { leftTop, rightTop },
+        pageNo,
+        lineHeight
+      } = position
+      const pageOffset = this.draw.getPageOffset(pageNo, true)
+      const x =
+        endIndex < 0
+          ? leftTop[0]
+          : position.bidiLevel === undefined
+            ? rightTop[0]
+            : getBidiCaretX(
+                position,
+                range.bidiAffinity,
+                positionList[endIndex + 1]
+              )
+      return [
+        {
+          x: x + pageOffset.x,
+          y: leftTop[1] + pageOffset.y,
+          width: 0,
+          height: lineHeight
+        }
+      ]
+    }
+    const selectionPositionList = positionList.slice(
+      startIndex + 1,
+      endIndex + 1
+    )
+    return getVisualRangeRects(selectionPositionList).map(rect => {
+      const { x, y, width, height, pageNo } = rect
+      const pageOffset = this.draw.getPageOffset(pageNo, true)
+      return {
+        x: x + pageOffset.x,
+        y: y + pageOffset.y,
+        width,
+        height
+      }
+    })
+  }
+
   public getRangeContext(): RangeContext | null {
     const range = this.range.getRange()
     const { startIndex, endIndex } = range
@@ -1799,59 +1962,8 @@ export class CommandAdapt {
           : endPosition.index! - endRow.startIndex + 1
     }
 
-    // 坐标信息（相对编辑器书写区）
-    const rangeRects: RangeRect[] = []
-    const selectionPositionList = this.position.getSelectionPositionList()
-    if (selectionPositionList) {
-      // 起始信息及x坐标
-      let currentRowNo: number | null = null
-      let currentX = 0
-      let rangeRect: RangeRect | null = null
-      for (let p = 0; p < selectionPositionList.length; p++) {
-        const {
-          rowNo,
-          pageNo,
-          coordinate: { leftTop, rightTop },
-          lineHeight
-        } = selectionPositionList[p]
-        const pageOffset = this.draw.getPageOffset(pageNo, true)
-        // 起始行变化追加选区信息
-        if (currentRowNo === null || currentRowNo !== rowNo) {
-          if (rangeRect) {
-            rangeRects.push(rangeRect)
-          }
-          rangeRect = {
-            x: leftTop[0] + pageOffset.x,
-            y: leftTop[1] + pageOffset.y,
-            width: rightTop[0] - leftTop[0],
-            height: lineHeight
-          }
-          currentRowNo = rowNo
-          currentX = leftTop[0]
-        } else {
-          rangeRect!.width = rightTop[0] - currentX
-        }
-        // 最后一个元素结束追加选区信息
-        if (p === selectionPositionList.length - 1 && rangeRect) {
-          rangeRects.push(rangeRect)
-        }
-      }
-    } else {
-      const positionList = this.position.getPositionList()
-      const position = positionList[endIndex]
-      const {
-        coordinate: { rightTop },
-        pageNo,
-        lineHeight
-      } = position
-      const pageOffset = this.draw.getPageOffset(pageNo, true)
-      rangeRects.push({
-        x: rightTop[0] + pageOffset.x,
-        y: rightTop[1] + pageOffset.y,
-        width: 0,
-        height: lineHeight
-      })
-    }
+    // 坐标信息（相对编辑器书写区），与公共查询共用视觉选区算法
+    const rangeRects: RangeRect[] = this.getRangeRects(range)
     // 区域信息
     const zone = this.draw.getZone().getZone()
     // 表格信息
@@ -1988,6 +2100,10 @@ export class CommandAdapt {
 
   public pageMode(payload: PageMode) {
     this.draw.setPageMode(payload)
+  }
+
+  public pageLayout(payload: PageLayout) {
+    this.draw.setPageLayout(payload)
   }
 
   public setColumns(config: IColumnOption | null) {
@@ -2639,6 +2755,10 @@ export class CommandAdapt {
     this.draw.getControl().setPropertiesListById(payload)
   }
 
+  public updateRuleContext(payload: RuleContext) {
+    this.draw.getCascadeManager().updateRuleContext(payload)
+  }
+
   public validate(payload?: IValidateOption): IControlValidateResult[] {
     return this.draw.getValidate().execute(payload)
   }
@@ -2652,6 +2772,10 @@ export class CommandAdapt {
     this.draw.render({
       isSubmitHistory: false
     })
+  }
+
+  public setBackend(payload: BackendType): void {
+    this.draw.setBackend(payload)
   }
 
   public updateOptions(payload: IUpdateOption) {
@@ -2892,14 +3016,13 @@ export class CommandAdapt {
     evt: MouseEvent,
     options: IPositionContextByEventOption = {}
   ): IPositionContextByEventResult | null {
-    const pageIndex = (<HTMLElement>evt.target)?.dataset.index
-    if (!pageIndex) return null
+    const pointer = getPagePointer(evt, this.draw.getPageContainer())
+    if (!pointer) return null
     const { isMustDirectHit = true } = options
-    const pageNo = Number(pageIndex)
     const positionContext = this.position.getPositionByXY({
-      x: evt.offsetX,
-      y: evt.offsetY,
-      pageNo
+      x: pointer.x,
+      y: pointer.y,
+      pageNo: pointer.pageNo
     })
     const {
       isDirectHit,
@@ -2953,7 +3076,7 @@ export class CommandAdapt {
       }
     }
     return {
-      pageNo,
+      pageNo: pointer.pageNo,
       element,
       rangeRect,
       tableInfo
@@ -3027,6 +3150,22 @@ export class CommandAdapt {
 
   public insertArea(payload: IInsertAreaOption) {
     return this.draw.getArea().insertArea(payload)
+  }
+
+  public insertFootnote(payload: IInsertFootnoteOption) {
+    return this.draw.getFootnote().insertFootnote(payload)
+  }
+
+  public setFootnoteValue(payload: ISetFootnoteValueOption) {
+    return this.draw.getFootnote().setFootnoteValue(payload)
+  }
+
+  public getFootnoteValue(payload: IGetFootnoteValueOption) {
+    return this.draw.getFootnote().getFootnoteValue(payload)
+  }
+
+  public locationFootnote(id: string, options?: ILocationFootnoteOption) {
+    return this.draw.getFootnote().locationFootnote(id, options)
   }
 
   public setAreaValue(payload: ISetAreaValueOption) {

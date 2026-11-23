@@ -1,5 +1,7 @@
 import { ElementType, IElement, TableBorder } from '../../../..'
+import { ZERO } from '../../../../dataset/constant/Common'
 import { TdBorder, TdSlash } from '../../../../dataset/enum/table/Table'
+import { TextDirection } from '../../../../dataset/enum/TextDirection'
 import { DeepRequired } from '../../../../interface/Common'
 import { IEditorOption } from '../../../../interface/Editor'
 import { ITableRowFragment } from '../../../../interface/Element'
@@ -7,11 +9,13 @@ import { IRow } from '../../../../interface/Row'
 import { ITd } from '../../../../interface/table/Td'
 import { ITr } from '../../../../interface/table/Tr'
 import { deepClone } from '../../../../utils'
+import { BidiResolver } from '../../../bidi/resolver/BidiResolver'
 import { RangeManager } from '../../../range/RangeManager'
+import { IRenderContext } from '../../../render/model/RenderContext'
 import { Draw } from '../../Draw'
 
 interface IDrawTableBorderOption {
-  ctx: CanvasRenderingContext2D
+  ctx: IRenderContext
   startX: number
   startY: number
   width: number
@@ -93,8 +97,13 @@ export class TableParticle {
     }
     let startTd = curTrList[startTrIndex!].tdList[startTdIndex!]
     let endTd = curTrList[endTrIndex!].tdList[endTdIndex!]
-    // 交换起始位置
-    if (startTd.x! > endTd.x! || startTd.y! > endTd.y!) {
+    // RTL 下物理 x 与逻辑列序相反，选区范围必须按逻辑列计算
+    const isAfter =
+      startTd.y! > endTd.y! ||
+      (this.isRtl(element)
+        ? startTd.colIndex! > endTd.colIndex!
+        : startTd.x! > endTd.x!)
+    if (isAfter) {
       ;[startTd, endTd] = [endTd, startTd]
     }
     const startColIndex = startTd.colIndex!
@@ -241,7 +250,7 @@ export class TableParticle {
   }
 
   private _drawSlash(
-    ctx: CanvasRenderingContext2D,
+    ctx: IRenderContext,
     drawTd: IFragmentDrawTd,
     startX: number,
     startY: number
@@ -268,7 +277,7 @@ export class TableParticle {
   }
 
   private _drawBorder(
-    ctx: CanvasRenderingContext2D,
+    ctx: IRenderContext,
     element: IElement,
     startX: number,
     startY: number,
@@ -464,7 +473,7 @@ export class TableParticle {
   }
 
   private _drawBackgroundColor(
-    ctx: CanvasRenderingContext2D,
+    ctx: IRenderContext,
     startX: number,
     startY: number,
     drawTdList: IFragmentDrawTd[]
@@ -677,6 +686,29 @@ export class TableParticle {
     return data
   }
 
+  public isRtl(element: IElement): boolean {
+    // 表格显式方向优先；兼容首单元格显式 RTL 驱动整表镜像的既有行为
+    let direction = element.direction
+    if (!direction) {
+      const firstValue = element.trList?.[0]?.tdList[0]?.value.find(
+        item => item.value !== ZERO
+      )
+      direction = firstValue?.direction ?? this.options.defaultDirection
+    }
+    if (direction !== TextDirection.AUTO) {
+      return direction === TextDirection.RTL
+    }
+    const text = element.trList
+      ?.flatMap(tr => tr.tdList)
+      .flatMap(td => td.value || [])
+      .map(item => item.value)
+      .join('')
+    return (
+      new BidiResolver().resolveDirection(text || '', direction) ===
+      TextDirection.RTL
+    )
+  }
+
   public computeRowColInfo(element: IElement) {
     const { colgroup, trList } = element
     if (!colgroup || !trList) return
@@ -778,10 +810,19 @@ export class TableParticle {
         }
       }
     }
+    if (this.isRtl(element)) {
+      // 仅镜像物理坐标，逻辑列索引与数据顺序保持不变
+      const tableWidth = this.getTableWidth(element)
+      for (const tr of trList) {
+        for (const td of tr.tdList) {
+          td.x = tableWidth - td.x! - td.width!
+        }
+      }
+    }
   }
 
   public drawRange(
-    ctx: CanvasRenderingContext2D,
+    ctx: IRenderContext,
     element: IElement,
     startX: number,
     startY: number,
@@ -802,8 +843,13 @@ export class TableParticle {
     if (!isCrossRowCol || tableId !== element.id) return
     let startTd = trList[startTrIndex!].tdList[startTdIndex!]
     let endTd = trList[endTrIndex!].tdList[endTdIndex!]
-    // 交换起始位置
-    if (startTd.x! > endTd.x! || startTd.y! > endTd.y!) {
+    // RTL 下物理 x 与逻辑列序相反，选区范围必须按逻辑列计算
+    const isAfter =
+      startTd.y! > endTd.y! ||
+      (this.isRtl(element)
+        ? startTd.colIndex! > endTd.colIndex!
+        : startTd.x! > endTd.x!)
+    if (isAfter) {
       ;[startTd, endTd] = [endTd, startTd]
     }
     const startColIndex = startTd.colIndex!
@@ -835,7 +881,7 @@ export class TableParticle {
   }
 
   public render(
-    ctx: CanvasRenderingContext2D,
+    ctx: IRenderContext,
     element: IElement,
     startX: number,
     startY: number,

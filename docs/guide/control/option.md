@@ -8,7 +8,7 @@
 | --------------------------- | ------------------------------------------------------------------- | -------------------------------------- |
 | `type`                      | `'text' \| 'select' \| 'checkbox' \| 'radio' \| 'date' \| 'number'` | 控件类型                               |
 | `value`                     | `IElement[] \| null`                                                | 控件值                                 |
-| `placeholder`               | `string`                                                            | 占位符                                 |
+| `placeholder`               | `string \| IElement[]`                                              | 占位内容，支持文本、图片及图文混合     |
 | `conceptId`                 | `string`                                                            | 概念 id（可多个控件共享，级联/取值用） |
 | `groupId`                   | `string`                                                            | 成组 id                                |
 | `prefix`                    | `string`                                                            | 前缀字符                               |
@@ -88,7 +88,7 @@
 | ------------ | -------- | ----------------------------------- |
 | `dateFormat` | `string` | 日期格式。默认：yyyy-MM-dd HH:mm:ss |
 
-`dateFormat` 占位符：`yyyy`/`YYYY` 年、`MM` 月、`dd`/`DD` 日、`HH` 时（24 小时制）、`hh` 时（12 小时制）、`mm` 分、`ss` 秒、`SSS` 毫秒，其余字符原样保留，如 `yyyy年MM月dd日 HH时mm分ss秒`。
+`dateFormat` 占位符：`yyyy`/`YYYY` 年、`MM` 月、`dd`/`DD` 日、`HH` 时（24 小时制）、`hh` 时（12 小时制）、`mm` 分、`ss` 秒、`SSS` 毫秒，其余字符原样保留，如 `yyyy年MM月dd日 HH时mm分ss秒`。注意：`hh` 无 AM/PM 标记，解析时值按 24 小时制读取（12 视为中午）。
 
 ## NUMBER 数值控件
 

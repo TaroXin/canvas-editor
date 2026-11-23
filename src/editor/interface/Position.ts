@@ -1,7 +1,7 @@
 import { ImageDisplay } from '../dataset/enum/Common'
 import { EditorZone } from '../dataset/enum/Editor'
 import { IElement, IElementFillRect, IElementPosition } from './Element'
-import { IRange } from './Range'
+import { BidiCaretAffinity, IRange } from './Range'
 import { IRow, IRowElement } from './Row'
 import { ITd } from './table/Td'
 
@@ -15,6 +15,9 @@ export interface ICurrentPosition {
   isImage?: boolean
   isLabel?: boolean
   isTable?: boolean
+  isFootnote?: boolean
+  footnoteId?: string
+  footnoteValueIndex?: number
   isDirectHit?: boolean
   trIndex?: number
   tdIndex?: number
@@ -25,6 +28,7 @@ export interface ICurrentPosition {
   tablePath?: ITablePositionContext[]
   zone?: EditorZone
   hitLineStartIndex?: number
+  bidiAffinity?: BidiCaretAffinity
 }
 
 export interface IGetPositionByXYPayload {
@@ -50,6 +54,8 @@ export interface IPositionContext {
   isImage?: boolean
   isLabel?: boolean
   isDirectHit?: boolean
+  isFootnote?: boolean
+  footnoteId?: string
   index?: number
   trIndex?: number
   tdIndex?: number
@@ -100,6 +106,8 @@ export interface IComputePageRowPositionResult {
 export interface IComputePositionListPayload {
   // 首个变动页码：该页之前的页位置/浮动/跨页表格片段可复用缓存
   fromPageNo?: number
+  // 允许逐页验证并复用首个变动页之后内容未变化的页面
+  isReuseUnchangedPages?: boolean
 }
 
 export interface IFloatPosition {

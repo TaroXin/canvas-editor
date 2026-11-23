@@ -2,6 +2,7 @@ import { commentList, data, options } from './mock'
 import './style.css'
 import prism from 'prismjs'
 import Editor, {
+  BackendType,
   BlockType,
   CheckboxMarkType,
   Command,
@@ -13,13 +14,18 @@ import Editor, {
   IBlock,
   ICatalogItem,
   IElement,
+  ITabStop,
   KeyMap,
   ListStyle,
   ListType,
+  PageLayout,
   PageMode,
   PaperDirection,
   RowFlex,
+  TabStopLeader,
+  TabStopType,
   TextDecorationStyle,
+  TextDirection,
   TitleLevel,
   splitText
 } from './editor'
@@ -34,6 +40,7 @@ window.onload = function () {
 
   // 1. 初始化编辑器
   const container = document.querySelector<HTMLDivElement>('.editor')!
+  const backend = new URLSearchParams(window.location.search).get('backend')
   const instance = new Editor(
     container,
     {
@@ -61,7 +68,12 @@ window.onload = function () {
         }
       ]
     },
-    options
+    {
+      ...options,
+      ...(backend === BackendType.SVG || backend === BackendType.CANVAS
+        ? { backend }
+        : {})
+    }
   )
   console.log('实例: ', instance)
   // cypress使用
@@ -343,19 +355,18 @@ window.onload = function () {
     '.menu-item__spacing'
   )!
   const spacingIconDom = spacingDom.querySelector<HTMLElement>('i')!
-  const spacingOptionDom =
-    spacingDom.querySelector<HTMLDivElement>('.options')!
+  const spacingOptionDom = spacingDom.querySelector<HTMLDivElement>('.options')!
   const spacingBeforeInputDom =
     spacingOptionDom.querySelector<HTMLInputElement>(
       '[data-spacingbefore-input]'
     )!
-  const spacingAfterInputDom =
-    spacingOptionDom.querySelector<HTMLInputElement>(
-      '[data-spacingafter-input]'
-    )!
+  const spacingAfterInputDom = spacingOptionDom.querySelector<HTMLInputElement>(
+    '[data-spacingafter-input]'
+  )!
   spacingIconDom.onclick = function () {
     console.log('spacing')
-    spacingOptionDom.classList.toggle('visible')
+    const isVisible = spacingOptionDom.classList.toggle('visible')
+    if (isVisible) renderTabStopRows(latestTabStops)
   }
   spacingOptionDom.onclick = function (evt) {
     evt.stopPropagation()
@@ -372,10 +383,12 @@ window.onload = function () {
   }
   spacingOptionDom.querySelector<HTMLButtonElement>(
     '[data-spacingbefore-decrease]'
-  )!.onclick = () => changeSpacingBefore(Number(spacingBeforeInputDom.value) - 6)
+  )!.onclick = () =>
+    changeSpacingBefore(Number(spacingBeforeInputDom.value) - 6)
   spacingOptionDom.querySelector<HTMLButtonElement>(
     '[data-spacingbefore-increase]'
-  )!.onclick = () => changeSpacingBefore(Number(spacingBeforeInputDom.value) + 6)
+  )!.onclick = () =>
+    changeSpacingBefore(Number(spacingBeforeInputDom.value) + 6)
   spacingOptionDom.querySelector<HTMLButtonElement>(
     '[data-spacingafter-decrease]'
   )!.onclick = () => changeSpacingAfter(Number(spacingAfterInputDom.value) - 6)
@@ -386,6 +399,149 @@ window.onload = function () {
     changeSpacingBefore(Number(spacingBeforeInputDom.value))
   spacingAfterInputDom.onchange = () =>
     changeSpacingAfter(Number(spacingAfterInputDom.value))
+
+  // 段落缩进（与段落间距同弹窗维护）
+  const indentInputMap: Record<string, HTMLInputElement> = {}
+  const indentConfig = [
+    {
+      key: 'indentleft',
+      execute: (value: number) => instance.command.executeIndentLeft(value),
+      clampMin: 0
+    },
+    {
+      key: 'indentright',
+      execute: (value: number) => instance.command.executeIndentRight(value),
+      clampMin: 0
+    },
+    {
+      key: 'indentfirstline',
+      execute: (value: number) => instance.command.executeIndentFirstLine(value)
+    }
+  ]
+  indentConfig.forEach(({ key, execute, clampMin }) => {
+    const input = spacingOptionDom.querySelector<HTMLInputElement>(
+      `[data-${key}-input]`
+    )!
+    indentInputMap[key] = input
+    const change = (value: number) => {
+      let indent = Math.round(value) || 0
+      if (clampMin !== undefined) indent = Math.max(clampMin, indent)
+      input.value = `${indent}`
+      execute(indent)
+    }
+    spacingOptionDom.querySelector<HTMLButtonElement>(
+      `[data-${key}-decrease]`
+    )!.onclick = () => change(Number(input.value) - 16)
+    spacingOptionDom.querySelector<HTMLButtonElement>(
+      `[data-${key}-increase]`
+    )!.onclick = () => change(Number(input.value) + 16)
+    input.onchange = () => change(Number(input.value))
+  })
+
+  // 制表位（结构化行编辑：位置 + 前导符；右上清除、底部添加）
+  const tabStopRowsDom = spacingOptionDom.querySelector<HTMLDivElement>(
+    '[data-tabstops-rows]'
+  )!
+  let latestTabStops: ITabStop[] = []
+  const TABSTOP_TYPE_OPTIONS = [
+    { value: TabStopType.LEFT, label: '左对齐' },
+    { value: TabStopType.CENTER, label: '居中对齐' },
+    { value: TabStopType.RIGHT, label: '右对齐' }
+  ]
+  const TABSTOP_LEADER_OPTIONS = [
+    { value: '', label: '无' },
+    { value: 'dot', label: '点线' },
+    { value: 'hyphen', label: '横线' },
+    { value: 'underline', label: '下划线' }
+  ]
+  const TABSTOP_DELETE_ICON =
+    '<svg viewBox="0 0 1024 1024" width="12" height="12"><path fill="currentColor" d="M820.1 68.3H649V42.5c0-23.6-19.1-42.7-42.7-42.7H417.7c-23.6 0-42.7 19.1-42.7 42.7v25.8H203.9c-23.6 0-42.7 19.1-42.7 42.7v68.3c0 23.6 19.1 42.7 42.7 42.7h616.2c23.6 0 42.7-19.1 42.7-42.7V111c0-23.6-19.1-42.7-42.7-42.7zM853.9 264.7H170.1c-28.3 0-51.2 22.9-51.2 51.2v34.1c0 28.3 22.9 51.2 51.2 51.2h17.1v563.2c0 32.5 26.3 59.7 59.7 59.7h529.1c32.5 0 59.7-26.3 59.7-59.7V401.1h17.1c28.3 0 51.2-22.9 51.2-51.2v-34.1c0-28.3-22.9-51.2-51.2-51.2z"/></svg>'
+  function renderTabStopRows(stops: ITabStop[]) {
+    tabStopRowsDom.innerHTML = ''
+    stops.forEach(stop => {
+      const row = document.createElement('div')
+      row.className = 'tabstop-row'
+      const positionInput = document.createElement('input')
+      positionInput.type = 'number'
+      positionInput.min = '1'
+      positionInput.placeholder = '位置'
+      positionInput.className = 'tabstop-row__position'
+      positionInput.value = `${stop.position}`
+      const typeSelect = document.createElement('select')
+      typeSelect.className = 'tabstop-row__type'
+      TABSTOP_TYPE_OPTIONS.forEach(({ value, label }) => {
+        const option = document.createElement('option')
+        option.value = value
+        option.text = label
+        if ((stop.type || TabStopType.LEFT) === value) option.selected = true
+        typeSelect.appendChild(option)
+      })
+      const leaderSelect = document.createElement('select')
+      leaderSelect.className = 'tabstop-row__leader'
+      TABSTOP_LEADER_OPTIONS.forEach(({ value, label }) => {
+        const option = document.createElement('option')
+        option.value = value
+        option.text = label
+        if ((stop.leader || '') === value) option.selected = true
+        leaderSelect.appendChild(option)
+      })
+      const deleteButton = document.createElement('button')
+      deleteButton.type = 'button'
+      deleteButton.className = 'tabstop-row__delete'
+      deleteButton.title = '删除'
+      deleteButton.innerHTML = TABSTOP_DELETE_ICON
+      row.append(positionInput, typeSelect, leaderSelect, deleteButton)
+      tabStopRowsDom.appendChild(row)
+    })
+  }
+  const collectTabStops = (): ITabStop[] => {
+    const stops: ITabStop[] = []
+    tabStopRowsDom.querySelectorAll('.tabstop-row').forEach(row => {
+      const position = Number(
+        row.querySelector<HTMLInputElement>('.tabstop-row__position')!.value
+      )
+      if (!(position > 0)) return
+      const type = (<HTMLSelectElement>row.querySelector('.tabstop-row__type')!)
+        .value as TabStopType
+      const leader = (<HTMLSelectElement>(
+        row.querySelector('.tabstop-row__leader')!
+      )).value as TabStopLeader
+      stops.push({
+        position: Math.round(position),
+        type,
+        ...(leader ? { leader } : {})
+      })
+    })
+    return stops.sort((a, b) => a.position - b.position)
+  }
+  const applyTabStops = () => {
+    instance.command.executeSetTabStops(collectTabStops())
+  }
+  tabStopRowsDom.addEventListener('change', applyTabStops)
+  tabStopRowsDom.addEventListener('click', evt => {
+    const deleteButton = (evt.target as HTMLElement).closest(
+      '.tabstop-row__delete'
+    )
+    if (!deleteButton) return
+    deleteButton.closest('.tabstop-row')!.remove()
+    applyTabStops()
+  })
+  spacingOptionDom
+    .querySelector<HTMLButtonElement>('[data-tabstops-clear]')!
+    .addEventListener('click', () => {
+      renderTabStopRows([])
+      instance.command.executeSetTabStops([])
+    })
+  spacingOptionDom
+    .querySelector<HTMLButtonElement>('[data-tabstops-add]')!
+    .addEventListener('click', () => {
+      const stops = collectTabStops()
+      const lastPosition = stops.length ? stops[stops.length - 1].position : 0
+      renderTabStopRows([
+        ...stops,
+        { position: lastPosition + 64, type: TabStopType.LEFT }
+      ])
+    })
 
   const listDom = document.querySelector<HTMLDivElement>('.menu-item__list')!
   listDom.title = `列表(${isApple ? '⌘' : 'Ctrl'}+Shift+U)`
@@ -687,12 +843,12 @@ window.onload = function () {
     '.menu-item__codeblock'
   )!
   codeblockDom.onclick = function () {
-    console.log('codeblock')
     new Dialog({
       title: '代码块',
       data: [
         {
           type: 'textarea',
+          label: '代码',
           name: 'codeblock',
           placeholder: '请输入代码',
           width: 500,
@@ -725,10 +881,14 @@ window.onload = function () {
             elementList.push(element)
           }
         }
-        elementList.unshift({
-          value: '\n'
+        // 保留原有语法高亮渲染，外层通过区域添加背景
+        instance.command.executeInsertArea({
+          area: {
+            backgroundColor: '#f5f5f5'
+          },
+          value: elementList,
+          range: instance.command.getRange()
         })
-        instance.command.executeInsertElementList(elementList)
       }
     })
   }
@@ -1434,8 +1594,13 @@ window.onload = function () {
     pageModeOptionsDom.classList.toggle('visible')
   }
   pageModeOptionsDom.onclick = function (evt) {
-    const li = evt.target as HTMLLIElement
-    instance.command.executePageMode(<PageMode>li.dataset.pageMode!)
+    const li = (evt.target as HTMLElement).closest<HTMLLIElement>('li')
+    if (!li) return
+    if (li.dataset.pageMode) {
+      instance.command.executePageMode(<PageMode>li.dataset.pageMode)
+    } else if (li.dataset.pageLayout) {
+      instance.command.executePageLayout(<PageLayout>li.dataset.pageLayout)
+    }
   }
 
   document.querySelector<HTMLDivElement>('.page-scale-percentage')!.onclick =
@@ -1630,6 +1795,65 @@ window.onload = function () {
   rulerToggleDom.onclick = function () {
     instance.command.executeToggleRuler()
   }
+
+  // 渲染后端切换
+  const backendSwitchDom =
+    document.querySelector<HTMLDivElement>('.backend-switch')!
+  const backendOptionDom = backendSwitchDom.querySelector('.options')!
+  const backendOptionList =
+    backendSwitchDom.querySelectorAll<HTMLLIElement>('[data-backend]')
+  const updateBackendOption = () => {
+    const backend = instance.command.getOptions().backend
+    backendSwitchDom.title = `渲染后端：${backend === BackendType.SVG ? 'SVG' : 'Canvas'}`
+    backendOptionList.forEach(option => {
+      option.classList.toggle('active', option.dataset.backend === backend)
+    })
+  }
+  updateBackendOption()
+  backendSwitchDom.querySelector('i')!.onclick = () => {
+    backendOptionDom.classList.toggle('visible')
+  }
+  backendOptionList.forEach(option => {
+    option.onclick = () => {
+      instance.command.executeSetBackend(option.dataset.backend as BackendType)
+      updateBackendOption()
+      backendOptionDom.classList.remove('visible')
+    }
+  })
+
+  // 文字方向
+  const textDirectionDom =
+    document.querySelector<HTMLDivElement>('.text-direction')!
+  const textDirectionOptionDom =
+    textDirectionDom.querySelector<HTMLDivElement>('.options')!
+  const textDirectionOptionList =
+    textDirectionDom.querySelectorAll<HTMLLIElement>('[data-text-direction]')
+  let previousTextDirection: TextDirection | null = null
+  const updateTextDirectionOption = (direction: TextDirection) => {
+    // 光标在同方向文本内移动时不重复写 DOM
+    if (previousTextDirection === direction) return
+    previousTextDirection = direction
+    textDirectionDom.dataset.direction =
+      direction === TextDirection.RTL ? TextDirection.RTL : TextDirection.LTR
+    textDirectionOptionList.forEach(option => {
+      option.classList.toggle(
+        'active',
+        option.dataset.textDirection === direction
+      )
+    })
+  }
+  updateTextDirectionOption(instance.command.getDirection())
+  textDirectionDom.querySelector('i')!.onclick = () => {
+    textDirectionOptionDom.classList.toggle('visible')
+  }
+  textDirectionOptionList.forEach(option => {
+    option.onclick = () => {
+      const direction = option.dataset.textDirection as TextDirection
+      instance.command.executeDirection(direction)
+      updateTextDirectionOption(direction)
+      textDirectionOptionDom.classList.remove('visible')
+    }
+  })
 
   // 全屏
   const fullscreenDom = document.querySelector<HTMLDivElement>('.fullscreen')!
@@ -2030,6 +2254,9 @@ window.onload = function () {
       leftDom.classList.add('active')
     }
 
+    // 文字方向
+    updateTextDirectionOption(payload.direction)
+
     // 行间距
     rowOptionDom
       .querySelectorAll<HTMLLIElement>('li')
@@ -2045,6 +2272,26 @@ window.onload = function () {
     }
     if (document.activeElement !== spacingAfterInputDom) {
       spacingAfterInputDom.value = `${payload.spacingAfter ?? 0}`
+    }
+
+    // 段落缩进
+    const reflectIndent = (key: string, value: number) => {
+      const input = indentInputMap[key]
+      if (input && document.activeElement !== input) {
+        input.value = `${value}`
+      }
+    }
+    reflectIndent('indentleft', payload.indentLeft ?? 0)
+    reflectIndent('indentright', payload.indentRight ?? 0)
+    reflectIndent('indentfirstline', payload.indentFirstLine ?? 0)
+
+    // 制表位（弹窗打开且未在编辑行时刷新行，避免编辑中被回显打断）
+    latestTabStops = payload.tabStops || []
+    if (
+      spacingOptionDom.classList.contains('visible') &&
+      !tabStopRowsDom.contains(document.activeElement)
+    ) {
+      renderTabStopRows(latestTabStops)
     }
 
     // 功能
@@ -2165,14 +2412,16 @@ window.onload = function () {
     })
   }
 
-  instance.listener.pageModeChange = function (payload) {
-    const activeMode = pageModeOptionsDom.querySelector<HTMLLIElement>(
-      `[data-page-mode='${payload}']`
-    )!
-    pageModeOptionsDom
-      .querySelectorAll('li')
-      .forEach(li => li.classList.remove('active'))
-    activeMode.classList.add('active')
+  const updatePageViewOption = (attribute: string, payload: string) => {
+    pageModeOptionsDom.querySelectorAll(`[${attribute}]`).forEach(li => {
+      li.classList.toggle('active', li.getAttribute(attribute) === payload)
+    })
+  }
+  instance.listener.pageModeChange = payload => {
+    updatePageViewOption('data-page-mode', payload)
+  }
+  instance.listener.pageLayoutChange = payload => {
+    updatePageViewOption('data-page-layout', payload)
   }
 
   const handleContentChange = async function () {
@@ -2207,6 +2456,39 @@ window.onload = function () {
     instance.macro.importMacros(saved)
   }
   instance.register.contextMenuList([
+    {
+      name: '添加脚注',
+      when: payload => {
+        return (
+          !payload.isReadonly &&
+          payload.editorTextFocus &&
+          payload.zone === EditorZone.MAIN &&
+          !payload.isInTable
+        )
+      },
+      callback: (command: Command) => {
+        new Dialog({
+          title: '添加脚注',
+          data: [
+            {
+              type: 'textarea',
+              label: '内容',
+              name: 'value',
+              height: 100,
+              required: true,
+              placeholder: '请输入脚注内容'
+            }
+          ],
+          onConfirm: payload => {
+            const value = payload.find(p => p.name === 'value')?.value
+            if (!value) return
+            command.executeInsertFootnote({
+              value: splitText(value).map(n => ({ value: n }))
+            })
+          }
+        })
+      }
+    },
     {
       name: '批注',
       when: payload => {

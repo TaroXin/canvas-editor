@@ -38,16 +38,37 @@ interface IElement {
   italic?: boolean;
   underline?: boolean;
   strikeout?: boolean;
+  // Text direction: left-to-right, right-to-left, or auto (first strong character)
+  direction?: {
+    LTR = 'ltr',
+    RTL = 'rtl',
+    AUTO = 'auto'
+  };
   rowFlex?: {
     LEFT = 'left',
     CENTER = 'center',
     RIGHT = 'right',
+    START = 'start',
+    END = 'end',
     ALIGNMENT = 'alignment',
     JUSTIFY = 'justify'
   };
   rowMargin?: number;
   spacingBefore?: number;
   spacingAfter?: number;
+  // left indent
+  indentLeft?: number;
+  // right indent
+  indentRight?: number;
+  // first-line indent (negative for hanging indent)
+  indentFirstLine?: number;
+  // paragraph tab stops (relative to the left margin)
+  tabStops?: {
+    position: number;
+    type: TabStopType;
+    // leader: none | dot | hyphen | underline
+    leader?: TabStopLeader;
+  }[];
   letterSpacing?: number;
   textDecoration?: {
     style?: TextDecorationStyle;
@@ -134,6 +155,7 @@ interface IElement {
     width: number;  // Crop width
     height: number; // Crop height
   }
+  imgRotation?: number; // Clockwise rotation in degrees; inline images occupy their rotated bounding box
   imgCaption?: {
     value: string;  // Caption content, supports {imageNo} placeholder
     color?: string; // Caption font color

@@ -39,7 +39,7 @@ const {
 
 ## getImage
 
-Feature: Gets the base64 string of the current page image
+Feature: Gets the base64 string of the current page image. The Canvas backend returns `data:image/png;base64`, while the SVG backend returns `data:image/svg+xml;base64`. `pixelRatio` only applies to Canvas. Snapshots produced by `snapDomFunction` are embedded as `image` nodes in SVG output.
 
 Usage:
 
@@ -92,6 +92,16 @@ Usage:
 const range = instance.command.getCursorPosition()
 ```
 
+## getDirection
+
+Feature: Get the text direction of the current range anchor element. Returns `defaultDirection` when the cursor is inactive or the element has no explicit direction.
+
+Usage:
+
+```javascript
+const direction: TextDirection = instance.command.getDirection()
+```
+
 ## getRemainingContentHeight
 
 Feature: Get remaining available content height on last page
@@ -132,6 +142,16 @@ Usage:
 
 ```javascript
 const rangeText = instance.command.getRangeText()
+```
+
+## getRangeRects
+
+Feature: Get rendered rectangles for a specific range.
+
+Usage:
+
+```javascript
+const rangeRects = instance.command.getRangeRects(range: IRange)
 ```
 
 ## getRangeContext
@@ -385,4 +405,17 @@ const {
   startPageNo: number
   endPageNo: number
 } = instance.command.getAreaValue(options: IGetAreaValueOption)
+```
+
+## getFootnoteValue
+
+Feature: Get footnote content by footnote ID.
+
+Usage:
+
+```javascript
+const {
+  id: string
+  value: IElement[]
+} | null = instance.command.getFootnoteValue(options: IGetFootnoteValueOption)
 ```

@@ -2,9 +2,9 @@ import Editor, { ElementType } from '../../../src/editor'
 
 describe('菜单-搜索', () => {
   beforeEach(() => {
-    cy.visit('http://localhost:3000/canvas-editor/')
+    cy.visitEditor()
 
-    cy.get('canvas').first().as('canvas').should('have.length', 1)
+    cy.getEditorPage().as('canvas').should('have.length', 1)
   })
 
   const searchText = 'canvas-editor'
@@ -113,12 +113,46 @@ describe('菜单-搜索', () => {
 
 describe('菜单-搜索-高级', () => {
   beforeEach(() => {
-    cy.visit('http://localhost:3000/canvas-editor/')
+    cy.visitEditor()
 
-    cy.get('canvas').first().as('canvas').should('have.length', 1)
+    cy.getEditorPage().as('canvas').should('have.length', 1)
   })
 
   const searchText = 'test'
+
+  it('正则忽略大小写保留非空白匹配和替换', () => {
+    cy.getEditor().then((editor: Editor) => {
+      editor.command.executeSelectAll()
+      editor.command.executeBackspace()
+      editor.command.executeInsertElementList([{ value: 'alpha 123 beta' }])
+    })
+
+    cy.get('.menu-item__search').click()
+    cy.get('#option-reg').should('be.checked')
+    cy.get('#option-case').should('be.checked')
+    cy.get('.menu-item__search__collapse__search input')
+      .invoke('val', '\\S+')
+      .trigger('input')
+
+    cy.get('.menu-item__search__collapse__search .search-result').should(
+      'have.text',
+      '0/3'
+    )
+
+    cy.get('#option-case').uncheck()
+    cy.get('.menu-item__search__collapse__search .search-result').should(
+      'have.text',
+      '0/3'
+    )
+
+    cy.get('#option-case').check()
+    cy.get('.menu-item__search__collapse__replace input').type('_')
+    cy.get('.menu-item__search__collapse__replace button').click()
+
+    cy.getEditor().then((editor: Editor) => {
+      expect(editor.command.getText().main).to.eq('_ _ _')
+    })
+  })
 
   it('搜索-普通文本多处匹配', () => {
     cy.getEditor().then((editor: Editor) => {

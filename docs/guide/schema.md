@@ -38,16 +38,37 @@ interface IElement {
   italic?: boolean;
   underline?: boolean;
   strikeout?: boolean;
+  // 文字方向：从左到右、从右到左、自动（按首个强方向字符）
+  direction?: {
+    LTR = 'ltr',
+    RTL = 'rtl',
+    AUTO = 'auto'
+  };
   rowFlex?: {
     LEFT = 'left',
     CENTER = 'center',
     RIGHT = 'right',
+    START = 'start',
+    END = 'end',
     ALIGNMENT = 'alignment',
     JUSTIFY = 'justify'
   };
   rowMargin?: number;
   spacingBefore?: number;
   spacingAfter?: number;
+  // 左缩进
+  indentLeft?: number;
+  // 右缩进
+  indentRight?: number;
+  // 首行缩进（负数为悬挂缩进）
+  indentFirstLine?: number;
+  // 段落制表位（距版心左缘）
+  tabStops?: {
+    position: number;
+    type: TabStopType;
+    // 前导符：none | dot | hyphen | underline
+    leader?: TabStopLeader;
+  }[];
   letterSpacing?: number;
   textDecoration?: {
     style?: TextDecorationStyle;
@@ -134,6 +155,7 @@ interface IElement {
     width: number;  // 裁剪宽度
     height: number; // 裁剪高度
   }
+  imgRotation?: number; // 顺时针旋转角度（度），行内图片按旋转外接框占位
   imgCaption?: {
     value: string;  // 题注内容，支持{imageNo}占位符
     color?: string; // 题注字体颜色

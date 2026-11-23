@@ -380,6 +380,22 @@ instance.command.executeList(listType: ListType | null, listStyle?: ListStyle)
 instance.command.executeRowFlex(rowFlex: RowFlex)
 ```
 
+## executeDirection
+
+功能：设置选区所在段落的文字方向。支持 `LTR`（从左到右）、`RTL`（从右到左）和 `AUTO`（按首个强方向字符自动判断）。双向文本混排时，会自动处理数字、标点、括号、上下标、视觉光标与选区。
+
+用法：
+
+```javascript
+instance.command.executeDirection(direction: TextDirection)
+```
+
+示例：
+
+```javascript
+instance.command.executeDirection(TextDirection.RTL)
+```
+
 ## executeRowMargin
 
 功能：段落行间距
@@ -408,6 +424,46 @@ instance.command.executeSpacingBefore(spacingBefore: number)
 
 ```javascript
 instance.command.executeSpacingAfter(spacingAfter: number)
+```
+
+## executeIndentLeft
+
+功能：段落左缩进
+
+用法：
+
+```javascript
+instance.command.executeIndentLeft(indentLeft: number)
+```
+
+## executeIndentRight
+
+功能：段落右缩进
+
+用法：
+
+```javascript
+instance.command.executeIndentRight(indentRight: number)
+```
+
+## executeIndentFirstLine
+
+功能：段落首行缩进（负数为悬挂缩进）
+
+用法：
+
+```javascript
+instance.command.executeIndentFirstLine(indentFirstLine: number)
+```
+
+## executeSetTabStops
+
+功能：设置光标所在段落制表位（传入空数组清除）
+
+用法：
+
+```javascript
+instance.command.executeSetTabStops(payload: ITabStop[])
 ```
 
 ## executeInsertTable
@@ -868,6 +924,16 @@ instance.command.executeSetImageCrop(crop: IImageCrop)
 instance.command.executePageMode(pageMode: PageMode)
 ```
 
+## executePageLayout
+
+功能：设置单页或多页布局，默认单页。多页布局仅在分页模式下生效，根据容器宽度自动同屏排列，不改变文档分页结果。
+
+用法：
+
+```javascript
+instance.command.executePageLayout(pageLayout: PageLayout)
+```
+
 ## executePageScale
 
 功能：设置缩放比例
@@ -1110,6 +1176,16 @@ instance.command.executeSetZone(zone: EditorZone)
 
 控件相关命令已迁移至[控件-方法](./control/command.md)，校验命令已迁移至[控件-验证](./control/validate.md)。
 
+## executeSetBackend
+
+功能：切换渲染后端，保留当前文档与 Editor 实例
+
+用法：
+
+```javascript
+instance.command.executeSetBackend(BackendType.SVG)
+```
+
 ## executeUpdateOptions
 
 功能：修改配置
@@ -1178,6 +1254,39 @@ instance.command.executeDeleteArea(payload?: IDeleteAreaOption)
 
 ```js
 instance.command.executeLocationArea(areaId: string, options?: ILocationAreaOption)
+```
+
+## executeInsertFootnote
+
+功能：在当前正文光标处插入脚注，返回脚注 ID；插入失败时返回 `null`。
+
+```js
+const footnoteId = instance.command.executeInsertFootnote({
+  id?: string,
+  value: IElement[]
+})
+```
+
+## executeSetFootnoteValue
+
+功能：根据脚注 ID 更新脚注正文。
+
+```js
+instance.command.executeSetFootnoteValue({
+  id: string,
+  value: IElement[]
+})
+```
+
+## executeLocationFootnote
+
+功能：定位到脚注正文末尾；设置 `position: LocationPosition.BEFORE` 时定位到正文引用处。Ctrl/Cmd 点击引用或脚注正文也可双向跳转。
+
+```js
+instance.command.executeLocationFootnote(
+  footnoteId: string,
+  options?: ILocationFootnoteOption
+)
 ```
 
 ## executeClearGraffiti
