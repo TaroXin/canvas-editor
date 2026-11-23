@@ -87,4 +87,88 @@ describe('表格单元格高度自适应', () => {
     // 合并单元格高度覆盖内容高度
     expect(spanTd.height!).toBeGreaterThanOrEqual(contentHeight)
   })
+
+  it('默认行高随内容自适应，小字号与小行距不再受硬编码下限限制', () => {
+    const table = {
+      type: ElementType.TABLE,
+      value: '',
+      colgroup: [{ width: 277 }, { width: 277 }],
+      trList: [
+        {
+          height: 0,
+          tdList: [
+            {
+              colspan: 1,
+              rowspan: 1,
+              value: [{ value: '小字内容', size: 10, rowMargin: 0.5 }]
+            },
+            {
+              colspan: 1,
+              rowspan: 1,
+              value: [{ value: '小字内容', size: 10, rowMargin: 0.5 }]
+            }
+          ]
+        },
+        {
+          height: 0,
+          tdList: [
+            { colspan: 1, rowspan: 1, value: [] },
+            { colspan: 1, rowspan: 1, value: [] }
+          ]
+        }
+      ]
+    } as unknown as IElement
+    const draw = renderMain([table])
+    const tableElement = draw
+      .getOriginalElementList()
+      .find(element => element.type === ElementType.TABLE)!
+    const smallRow = tableElement.trList![0]
+    const emptyRow = tableElement.trList![1]
+    // 小字号+小行距高度应贴合内容，明显小于原来的 37/42 下限
+    expect(smallRow.height).toBeCloseTo(smallRow.tdList[0].mainHeight!, 5)
+    expect(smallRow.height).toBeLessThan(30)
+    // 空单元格按默认单行内容自适应，不会塌陷为 0，且不再强制拉到 42
+    expect(emptyRow.height).toBeGreaterThan(0)
+    expect(emptyRow.height).toBeCloseTo(emptyRow.tdList[0].mainHeight!, 5)
+    expect(emptyRow.height).toBeLessThan(42)
+  })
+
+  it('支持通过 defaultTrMinHeight 或 tr.minHeight 保留自定义最小行高', () => {
+    const table = {
+      type: ElementType.TABLE,
+      value: '',
+      colgroup: [{ width: 277 }],
+      trList: [
+        {
+          height: 0,
+          tdList: [
+            {
+              colspan: 1,
+              rowspan: 1,
+              value: [{ value: '小字', size: 10, rowMargin: 0.5 }]
+            }
+          ]
+        },
+        {
+          height: 80,
+          minHeight: 80,
+          tdList: [
+            {
+              colspan: 1,
+              rowspan: 1,
+              value: [{ value: '手动拉高行', size: 12 }]
+            }
+          ]
+        }
+      ]
+    } as unknown as IElement
+    const draw = renderMain([table], {
+      table: { defaultTrMinHeight: 28 }
+    })
+    const tableElement = draw
+      .getOriginalElementList()
+      .find(element => element.type === ElementType.TABLE)!
+    expect(tableElement.trList![0].height).toBe(28)
+    expect(tableElement.trList![1].height).toBe(80)
+  })
 })

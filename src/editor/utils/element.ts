@@ -341,10 +341,13 @@ export function formatElementList(
           const tr = el.trList[t]
           const trId = tr.id || getUUID()
           tr.id = trId
-          if (!tr.minHeight || tr.minHeight < defaultTrMinHeight) {
+          if (
+            defaultTrMinHeight &&
+            (!tr.minHeight || tr.minHeight < defaultTrMinHeight)
+          ) {
             tr.minHeight = defaultTrMinHeight
           }
-          if (tr.height < tr.minHeight) {
+          if (tr.minHeight && tr.height < tr.minHeight) {
             tr.height = tr.minHeight
           }
           for (let d = 0; d < tr.tdList.length; d++) {
@@ -356,13 +359,17 @@ export function formatElementList(
               isHandleFirstElement: true,
               isForceCompensation: true
             })
-            // 首字符字体大小默认使用首个字符元素字体大小
-            if (
-              !td.value[0].size &&
-              td.value[1]?.size &&
-              isTextLikeElement(td.value[1])
-            ) {
-              td.value[0].size = td.value[1].size
+            // 首字符字体大小与行距默认使用首个字符元素设置，避免空占位符撑高行高
+            if (td.value[1] && isTextLikeElement(td.value[1])) {
+              if (!td.value[0].size && td.value[1].size) {
+                td.value[0].size = td.value[1].size
+              }
+              if (
+                td.value[0].rowMargin === undefined &&
+                td.value[1].rowMargin !== undefined
+              ) {
+                td.value[0].rowMargin = td.value[1].rowMargin
+              }
             }
             for (let v = 0; v < td.value.length; v++) {
               const value = td.value[v]

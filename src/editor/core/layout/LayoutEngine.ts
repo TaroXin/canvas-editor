@@ -128,7 +128,7 @@ export class LayoutEngine {
       defaultSize,
       scale,
       imgCaption,
-      table: { tdPadding, defaultColMinWidth, overflow },
+      table: { tdPadding, defaultTrMinHeight, defaultColMinWidth, overflow },
       defaultTabWidth,
       hangPunctuation
     } = options
@@ -401,14 +401,12 @@ export class LayoutEngine {
         const tdPaddingHeight = tdPadding[0] + tdPadding[2]
         // 表格跨页在渲染层拆分行（数据层保持单一表格）
         const trList = element.trList!
-        // 重置tr高度：行高不可低于一个单元格最小高度
-        const tdMinHeight =
-          tdPaddingHeight + defaultSize + (rowMargin * 2) / scale
+        // 重置tr高度：行高默认取最小高度，后续根据内容自适应
         for (let t = 0; t < trList.length; t++) {
           const tr = trList[t]
-          // 行高默认当前最小高度，后续根据内容自适应
-          tr.height = Math.max(tdMinHeight, tr.minHeight || 0)
-          tr.minHeight = tr.height
+          const minHeight = Math.max(defaultTrMinHeight, tr.minHeight || 0)
+          tr.height = minHeight
+          tr.minHeight = minHeight
         }
         // 表格不允许超出正文区域时：等比例压缩列宽至内容区内，并清除横向偏移
         if (!overflow) {

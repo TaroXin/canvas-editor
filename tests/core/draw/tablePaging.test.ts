@@ -915,10 +915,10 @@ describe('表格跨页渲染层拆分', () => {
 
   it('页面可用高度不足一行内容时放弃拆分（不产生无限循环）', () => {
     const table = buildTable(10)
-    // 可用高度仅 40，不足一行内容 => 放弃拆分整表透出
+    // 可用高度仅 20，不足一行内容 => 放弃拆分整表透出
     const draw = renderMain([table], {
       width: 400,
-      height: 120,
+      height: 100,
       margins: [40, 40, 40, 40]
     })
     const fragmentRows = draw.getRowList().filter(row => row.tableFragment)
